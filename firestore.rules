@@ -1,0 +1,87 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── Funciones auxiliares ───────────────────────────────────────────
+    function isAuth() {
+      return request.auth != null;
+    }
+
+    function userData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function isRole(role) {
+      return isAuth() && userData().role == role && userData().isActive == true;
+    }
+
+    function isAdmin()  { return isRole('admin'); }
+    function isHotel()  { return isRole('hotel'); }
+    function isPublic() { return isRole('public'); }
+    function isOwner(uid) { return isAuth() && request.auth.uid == uid; }
+
+    // ── users ──────────────────────────────────────────────────────────
+    match /users/{userId} {
+      allow read:   if isAdmin() || isOwner(userId);
+      allow create: if isAuth() && request.auth.uid == userId;
+      allow update: if isAdmin()
+                    || (isOwner(userId)
+                        && request.resource.data.role     == resource.data.role
+                        && request.resource.data.isActive == resource.data.isActive);
+      allow delete: if isAdmin();
+
+      // Buzón de mensajes del hotel
+      match /inbox/{messageId} {
+        allow read:   if isAdmin() || isOwner(userId);
+        allow create: if isAdmin();
+        allow update: if isOwner(userId)
+                      && request.resource.data.diff(resource.data)
+                         .affectedKeys().hasOnly(['isRead']);
+        allow delete: if isAdmin();
+      }
+    }
+
+    // ── packages ───────────────────────────────────────────────────────
+    match /packages/{packageId} {
+      allow read: if isAuth()
+                  && (resource.data.isActive == true
+                      || isAdmin()
+                      || (isHotel() && resource.data.hotelId == request.auth.uid));
+      allow create: if isHotel()
+                    && request.resource.data.hotelId == request.auth.uid;
+      allow update: if isHotel()
+                    && resource.data.hotelId == request.auth.uid;
+      allow delete: if isHotel()
+                    && resource.data.hotelId == request.auth.uid;
+    }
+
+    // ── reservations ───────────────────────────────────────────────────
+    match /reservations/{reservationId} {
+      allow read: if isAuth()
+                  && (isOwner(resource.data.userId)
+                      || isAdmin()
+                      || (isHotel() && resource.data.hotelId == request.auth.uid));
+      allow create: if isPublic()
+                    && request.resource.data.userId == request.auth.uid
+                    && request.resource.data.status == 'pending';
+      allow update: if (isHotel() && resource.data.hotelId == request.auth.uid
+                        && request.resource.data.diff(resource.data)
+                           .affectedKeys().hasOnly(['status','hotelMessage','updatedAt']))
+                    || (isPublic() && isOwner(resource.data.userId)
+                        && request.resource.data.diff(resource.data)
+                           .affectedKeys().hasOnly(['status','updatedAt'])
+                        && request.resource.data.status == 'cancelled');
+      allow delete: if false;
+    }
+
+    // ── notifications ──────────────────────────────────────────────────
+    match /notifications/{notifId} {
+      // El cliente Flutter escribe notificaciones (ya que no hay Cloud Functions)
+      // Se protege por el campo toUserId para que nadie lea las de otro
+      allow read:   if isAuth() && resource.data.toUserId == request.auth.uid;
+      allow create: if isAuth();
+      allow update: if false;
+      allow delete: if false;
+    }
+  }
+}

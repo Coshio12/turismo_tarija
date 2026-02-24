@@ -1,0 +1,239 @@
+# ════════════════════════════════════════════════════════════════════
+# .gitignore — Flutter + Firebase (Android / iOS)
+# Proyecto: Turismo Tarija
+# ════════════════════════════════════════════════════════════════════
+
+
+# ────────────────────────────────────────────────────────────────────
+# 🔴 CRÍTICO — Credenciales y secretos (NUNCA subir)
+# ────────────────────────────────────────────────────────────────────
+
+# Firebase — configuración con claves de API y project IDs
+google-services.json
+GoogleService-Info.plist
+firebase_options.dart
+
+# Service account (Admin SDK) — clave privada completa
+*service_account*.json
+*serviceAccount*.json
+service-account.json
+service-account-key.json
+functions/service-account*.json
+
+# Keystore de firma Android — contiene la clave privada del APK
+*.keystore
+*.jks
+key.properties           # contiene storePassword, keyPassword, keyAlias
+
+# Variables de entorno y secretos locales
+.env
+.env.local
+.env.production
+.env.staging
+*.env
+secrets.dart
+secrets.json
+
+# Constantes de la app — contiene URLs de Cloud Functions, IDs y configuración sensible
+lib/core/constants/app_constants.dart
+
+# Dart define / config files con valores reales
+dart_defines/
+--dart-define*.txt
+dart-define*.json
+
+
+# ────────────────────────────────────────────────────────────────────
+# 🟠 Flutter — archivos generados y cache
+# ────────────────────────────────────────────────────────────────────
+
+# Dependencias (se reinstalan con `flutter pub get`)
+.dart_tool/
+.packages
+pubspec.lock            # ⚠️  Comentar esta línea si es una app (no un paquete)
+                        #     para reproducibilidad exacta de versiones
+
+# Build outputs
+build/
+.flutter-plugins
+.flutter-plugins-dependencies
+
+# Flutter web
+lib/generated_plugin_registrant.dart
+
+# Dart generated files
+*.g.dart
+*.freezed.dart
+*.gr.dart
+*.mocks.dart
+
+# Flutter golden test images (grandes, opcionales)
+# **/test/**/goldens/
+
+
+# ────────────────────────────────────────────────────────────────────
+# 🟡 Android
+# ────────────────────────────────────────────────────────────────────
+
+android/.gradle/
+android/build/
+android/captures/
+android/local.properties      # contiene sdk.dir local — no portable
+android/key.properties         # storeFile, storePassword, keyAlias, keyPassword
+android/app/release/           # APKs / AABs firmados
+android/app/debug/
+android/app/*.apk
+android/app/*.aab
+android/app/google-services.json
+*.apk
+*.aab
+*.ap_
+
+# Gradle cache
+.gradle/
+gradle-wrapper.jar
+
+
+# ────────────────────────────────────────────────────────────────────
+# 🟡 iOS / macOS
+# ────────────────────────────────────────────────────────────────────
+
+ios/Pods/
+ios/.symlinks/
+ios/Flutter/Flutter.framework
+ios/Flutter/Flutter.podspec
+ios/Flutter/App.framework
+ios/Flutter/ephemeral/
+ios/Flutter/Generated.xcconfig
+ios/Flutter/flutter_export_environment.sh
+ios/Runner.xcworkspace/
+ios/GoogleService-Info.plist
+
+macos/Pods/
+macos/.symlinks/
+macos/Flutter/GeneratedPluginRegistrant.swift
+macos/Flutter/Flutter-Debug.xcconfig
+macos/Flutter/Flutter-Release.xcconfig
+macos/Flutter/ephemeral/
+
+*.xcworkspace/xcuserdata/
+*.xcodeproj/xcuserdata/
+xcuserstate
+*.moved-aside
+DerivedData/
+*.hmap
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# CocoaPods
+Pods/
+Podfile.lock            # similar a pubspec.lock — comentar si quieres reproducibilidad exacta
+
+
+# ────────────────────────────────────────────────────────────────────
+# 🔵 Firebase Functions (Node.js)
+# ────────────────────────────────────────────────────────────────────
+
+functions/node_modules/
+functions/.env
+functions/.secret.local
+functions/lib/              # JS compilado desde TypeScript
+functions/*.log
+
+# Firebase emulator data
+.firebase/
+firebase-debug.log
+firebase-debug.*.log
+firestore-debug.log
+ui-debug.log
+pubsub-debug.log
+
+
+# ────────────────────────────────────────────────────────────────────
+# 🔵 IDEs y editores
+# ────────────────────────────────────────────────────────────────────
+
+# VS Code
+.vscode/
+!.vscode/extensions.json    # excepción: recomendaciones de extensiones es útil compartir
+!.vscode/launch.json        # excepción: configuración de debug puede compartirse
+
+# Android Studio / IntelliJ IDEA
+.idea/
+*.iml
+*.ipr
+*.iws
+.idea/libraries/
+.idea/modules.xml
+.idea/workspace.xml
+.idea/shelf/
+
+# Xcode
+*.xcuserstate
+project.xcworkspace/
+
+
+# ────────────────────────────────────────────────────────────────────
+# 🔵 Sistema operativo
+# ────────────────────────────────────────────────────────────────────
+
+# macOS
+.DS_Store
+.DS_Store?
+.AppleDouble
+.LSOverrideIcon
+._*
+.Spotlight-V100
+.Trashes
+.fseventsd
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptionstore
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.lnk
+
+# Linux
+*~
+.nfs*
+
+
+# ────────────────────────────────────────────────────────────────────
+# 🔵 Logs y temporales
+# ────────────────────────────────────────────────────────────────────
+
+*.log
+*.logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+crash.log
+flutter_*.log
+
+
+# ────────────────────────────────────────────────────────────────────
+# 🔵 Cobertura y tests
+# ────────────────────────────────────────────────────────────────────
+
+coverage/
+lcov.info
+.coverage
+test/coverage_helper_test.dart
+
+
+# ────────────────────────────────────────────────────────────────────
+# 🔵 Otros
+# ────────────────────────────────────────────────────────────────────
+
+# Archivos de documentación generada
+doc/api/
+
+# Archivos temporales de compilación
+*.class
+*.pyc
+__pycache__/
+*.o
+*.so

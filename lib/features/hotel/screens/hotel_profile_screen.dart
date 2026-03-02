@@ -279,6 +279,21 @@ class _HotelProfileScreenState extends State<HotelProfileScreen> {
 
               const SizedBox(height: 28),
 
+              // ── QR de pago ────────────────────────────────────────
+              _sectionHeader(Icons.qr_code_2_outlined, 'QR de pago'),
+              const SizedBox(height: 12),
+
+              _QrPaymentTile(
+                qrUrl: user.qrUrl,
+                onTap: () async {
+                  await context.push('/hotel/qr');
+                  // Refrescar para mostrar el QR actualizado
+                  if (context.mounted) setState(() {});
+                },
+              ),
+
+              const SizedBox(height: 28),
+
               // ── Estadísticas ──────────────────────────────────────
               _sectionHeader(Icons.bar_chart_outlined, 'Estadísticas'),
               const SizedBox(height: 12),
@@ -440,6 +455,79 @@ class _HotelProfileScreenState extends State<HotelProfileScreen> {
         ),
         const Icon(Icons.lock_outline, size: 16, color: Colors.grey),
       ]),
+    );
+  }
+}
+
+// ── Widget QR de pago ─────────────────────────────────────────────────
+class _QrPaymentTile extends StatelessWidget {
+  final String?      qrUrl;
+  final VoidCallback onTap;
+  const _QrPaymentTile({required this.qrUrl, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final hasQr = qrUrl != null && qrUrl!.isNotEmpty;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: hasQr ? Colors.green.shade50 : Colors.grey.shade50,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+              color: hasQr ? Colors.green.shade300 : Colors.grey.shade300),
+        ),
+        child: Row(children: [
+          // Miniatura QR o placeholder
+          Container(
+            width: 56, height: 56,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.grey.shade200),
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: hasQr
+                ? Image.network(
+                    '$qrUrl?v=${DateTime.now().millisecondsSinceEpoch}',
+                    fit: BoxFit.contain,
+                    errorBuilder: (_, __, ___) => Icon(Icons.qr_code_2,
+                        size: 32, color: Colors.grey.shade400),
+                  )
+                : Icon(Icons.qr_code_2,
+                    size: 32, color: Colors.grey.shade400),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+              Text(
+                hasQr ? 'QR cargado ✓' : 'Sin QR de pago',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: hasQr
+                      ? Colors.green.shade700
+                      : Colors.grey.shade700,
+                ),
+              ),
+              const SizedBox(height: 3),
+              Text(
+                hasQr
+                    ? 'Los turistas ven tu QR al hacer una reserva. Toca para cambiarlo.'
+                    : 'Sube tu QR para que los turistas puedan pagarte.',
+                style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+              ),
+            ]),
+          ),
+          const SizedBox(width: 8),
+          Icon(
+            hasQr ? Icons.edit_outlined : Icons.add_circle_outline,
+            color: hasQr ? Colors.green : Colors.grey,
+          ),
+        ]),
+      ),
     );
   }
 }

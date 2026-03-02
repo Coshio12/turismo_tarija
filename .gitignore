@@ -37,6 +37,7 @@ secrets.json
 # Constantes de la app — contiene URLs de Cloud Functions, IDs y configuración sensible
 lib/core/constants/app_constants.dart
 
+
 # Dart define / config files con valores reales
 dart_defines/
 --dart-define*.txt

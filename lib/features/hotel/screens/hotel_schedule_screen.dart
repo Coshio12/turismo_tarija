@@ -197,7 +197,7 @@ class _ScheduleCard extends StatelessWidget {
           subtitle: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(r.packageName,
+              Text(r.isPackage ? r.packageName : r.roomName,
                   style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
               const SizedBox(height: 2),
               Row(children: [
@@ -237,20 +237,21 @@ class _ScheduleCard extends StatelessWidget {
                   const Divider(height: 1),
                   const SizedBox(height: 10),
                   _row(Icons.phone_outlined,   'Teléfono', r.guestPhone),
-                  _row(Icons.luggage_outlined, 'Paquete',  r.packageName),
+                  _row(r.isPackage ? Icons.luggage_outlined : Icons.bed_outlined,
+                      r.isPackage ? 'Paquete' : 'Habitación',
+                      r.isPackage ? r.packageName : r.roomName),
                   _row(Icons.calendar_today,
                       'Solicitada', fmt.format(r.createdAt)),
-                  if (r.includesLodging && r.checkInDate != null) ...[
-                    _row(Icons.login_outlined,  'Check-in',
-                        fmt.format(r.checkInDate!)),
-                    _row(Icons.logout_outlined, 'Check-out',
-                        r.checkOutDate != null
-                            ? fmt.format(r.checkOutDate!)
-                            : '-'),
-                  ],
-                  if (r.includesTourGuide && r.tourGuideDate != null)
+                  _row(Icons.login_outlined,  'Check-in',
+                      fmt.format(r.checkInDate)),
+                  _row(Icons.logout_outlined, 'Check-out',
+                      fmt.format(r.checkOutDate)),
+                  _row(Icons.nights_stay_outlined, 'Noches', '${r.nights}'),
+                  if (r.isPackage)
                     _row(Icons.tour_outlined, 'Guía turística',
-                        fmt.format(r.tourGuideDate!)),
+                        r.tourGuideAssigned
+                            ? fmt.format(r.tourGuideDate!)
+                            : 'Pendiente de asignar'),
                   if (r.hotelMessage.isNotEmpty) ...[
                     const SizedBox(height: 8),
                     Container(

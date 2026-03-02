@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../core/models/message_model.dart';
 import '../../../core/models/package_model.dart';
 import '../../../core/models/reservation_model.dart';
+import '../../../core/models/room_model.dart';
 import '../../../core/services/firestore_service.dart';
 
 class HotelProvider extends ChangeNotifier {
@@ -11,6 +12,7 @@ class HotelProvider extends ChangeNotifier {
   final List<StreamSubscription> _subs = [];
 
   List<PackageModel>     _packages        = [];
+  List<RoomModel>        _rooms           = [];
   List<ReservationModel> _pending         = [];
   List<ReservationModel> _allReservations = [];
   List<MessageModel>     _inbox           = [];
@@ -18,13 +20,13 @@ class HotelProvider extends ChangeNotifier {
   String? _error;
 
   List<PackageModel>     get packages            => _packages;
+  List<RoomModel>        get rooms               => _rooms;
   List<ReservationModel> get pendingReservations => _pending;
   List<ReservationModel> get allReservations     => _allReservations;
   List<MessageModel>     get inbox               => _inbox;
-  bool    get loading => _loading;
-  String? get error   => _error;
+  bool    get loading    => _loading;
+  String? get error      => _error;
 
-  /// Mensajes no leídos — usado para el badge del buzón
   int get unreadCount => _inbox.where((m) => !m.isRead).length;
 
   // ── Streams ───────────────────────────────────────────────────────
@@ -33,6 +35,10 @@ class HotelProvider extends ChangeNotifier {
     _subs.addAll([
       _service.hotelPackagesStream(hotelId).listen((l) {
         _packages = l;
+        notifyListeners();
+      }),
+      _service.hotelRoomsStream(hotelId).listen((l) {
+        _rooms = l;
         notifyListeners();
       }),
       _service.hotelPendingReservationsStream(hotelId).listen((l) {
@@ -45,7 +51,7 @@ class HotelProvider extends ChangeNotifier {
       }),
       _service.inboxStream(hotelId).listen((l) {
         _inbox = l;
-        notifyListeners(); // dispara rebuild del badge automáticamente
+        notifyListeners();
       }),
     ]);
   }
@@ -62,7 +68,7 @@ class HotelProvider extends ChangeNotifier {
     }
   }
 
-  // ── Paquetes con actualización optimista ──────────────────────────
+  // ── Paquetes ──────────────────────────────────────────────────────
   Future<bool> createPackage(PackageModel pkg) =>
       _run(() => _service.createPackage(pkg));
 
@@ -72,7 +78,7 @@ class HotelProvider extends ChangeNotifier {
       return p.copyWith(
         packageName:    data['packageName']    as String?,
         description:    data['description']    as String?,
-        pricePerPerson: data['pricePerPerson'] as double?,
+        guidePricePerPerson: data['guidePricePerPerson'] as double?,
         hotelAddress:   data['hotelAddress']   as String?,
         hotelLocation:  data['hotelLocation'],
       );
@@ -96,12 +102,39 @@ class HotelProvider extends ChangeNotifier {
     return _run(() => _service.togglePackageActive(id, active));
   }
 
+  // ── Habitaciones ──────────────────────────────────────────────────
+  Future<bool> createRoom(RoomModel room) =>
+      _run(() => _service.createRoom(room));
 
-  // ── Perfil del hotel ──────────────────────────────────────────────
-  Future<bool> updateHotelProfile(String hotelId, Map<String, dynamic> data) =>
+  Future<bool> updateRoom(String roomId, Map<String, dynamic> data) =>
+      _run(() => _service.updateRoom(roomId, data));
+
+  Future<bool> deleteRoom(String roomId) async {
+    _rooms = _rooms.where((r) => r.roomId != roomId).toList();
+    notifyListeners();
+    return _run(() => _service.deleteRoom(roomId));
+  }
+
+  Future<bool> toggleRoom(String roomId, bool active) async {
+    _rooms = _rooms.map((r) {
+      if (r.roomId != roomId) return r;
+      return r.copyWith(isActive: active);
+    }).toList();
+    notifyListeners();
+    return _run(() => _service.toggleRoomActive(roomId, active));
+  }
+
+  Future<List<RoomModel>> getActiveRooms(String hotelId) =>
+      _service.hotelActiveRoomsFuture(hotelId);
+
+  // ── Perfil ────────────────────────────────────────────────────────
+  Future<bool> updateHotelProfile(
+          String hotelId, Map<String, dynamic> data) =>
       _run(() => _service.updateHotelProfile(hotelId, data));
 
   // ── Reservas ──────────────────────────────────────────────────────
+
+  /// Actualiza estado y opcionalmente asigna fecha de guía.
   Future<bool> updateReservationStatus({
     required String reservationId,
     required String userId,
@@ -109,6 +142,7 @@ class HotelProvider extends ChangeNotifier {
     required String hotelMessage,
     required String hotelName,
     required String packageName,
+    DateTime?       tourGuideDate,
   }) =>
       _run(() => _service.updateReservationStatus(
             reservationId: reservationId,
@@ -117,11 +151,22 @@ class HotelProvider extends ChangeNotifier {
             hotelMessage:  hotelMessage,
             hotelName:     hotelName,
             packageName:   packageName,
+            tourGuideDate: tourGuideDate,
+          ));
+
+  /// Permite actualizar únicamente la fecha de guía
+  /// de una reserva ya aceptada (desde el historial).
+  Future<bool> assignTourGuideDate({
+    required String   reservationId,
+    required DateTime tourGuideDate,
+  }) =>
+      _run(() => _service.assignTourGuideDate(
+            reservationId: reservationId,
+            tourGuideDate: tourGuideDate,
           ));
 
   // ── Inbox ─────────────────────────────────────────────────────────
   Future<void> markRead(String hotelId, String messageId) async {
-    // Actualización optimista: marcar como leído localmente al instante
     _inbox = _inbox.map((m) {
       if (m.messageId != messageId) return m;
       return MessageModel(
@@ -133,7 +178,7 @@ class HotelProvider extends ChangeNotifier {
         createdAt:   m.createdAt,
       );
     }).toList();
-    notifyListeners(); // badge se actualiza al instante
+    notifyListeners();
     await _service.markMessageRead(hotelId, messageId);
   }
 
@@ -146,7 +191,8 @@ class HotelProvider extends ChangeNotifier {
       await fn();
       return true;
     } catch (e) {
-      _error = e.toString()
+      _error = e
+          .toString()
           .replaceAll('Exception: ', '')
           .replaceAll('ArgumentError: ', '');
       return false;

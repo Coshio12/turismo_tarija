@@ -4,21 +4,26 @@ import '../features/auth/providers/auth_provider.dart';
 import '../features/auth/screens/login_screen.dart';
 import '../features/public/screens/home_screen.dart';
 import '../features/public/screens/package_detail_screen.dart';
+import '../features/public/screens/room_detail_screen.dart';
 import '../features/public/screens/create_reservation_screen.dart';
 import '../features/public/screens/my_reservations_screen.dart';
+import '../features/public/screens/payment_screen.dart';            // ← NUEVO
 import '../features/hotel/screens/hotel_home_screen.dart';
 import '../features/hotel/screens/create_package_screen.dart';
 import '../features/hotel/screens/reservation_requests_screen.dart';
 import '../features/hotel/screens/inbox_screen.dart';
 import '../features/hotel/screens/hotel_schedule_screen.dart';
 import '../features/hotel/screens/hotel_profile_screen.dart';
+import '../features/hotel/screens/hotel_qr_screen.dart';            // ← NUEVO
+import '../features/hotel/screens/hotel_receipt_screen.dart';       // ← NUEVO
+import '../features/hotel/screens/rooms_screen.dart';
+import '../features/hotel/screens/create_room_screen.dart';
 import '../features/admin/screens/admin_home_screen.dart';
 import '../features/admin/screens/hotel_detail_screen.dart';
 import '../core/models/package_model.dart';
+import '../core/models/reservation_model.dart';
+import '../core/models/room_model.dart';
 
-/// Rutas raíz (home de cada rol) — se navega con go(), reemplazan el stack.
-/// Rutas secundarias (detalle, crear, editar) — se navega con push(),
-/// se apilan sobre la raíz y el botón Back funciona correctamente.
 GoRouter buildRouter(AuthProvider auth) {
   return GoRouter(
     refreshListenable: auth,
@@ -43,14 +48,16 @@ GoRouter buildRouter(AuthProvider auth) {
 
       if (loggedIn) {
         final role = auth.user!.role;
-        // Impedir que un rol acceda a rutas de otro rol
-        if (role == 'hotel' && (loc.startsWith('/home') || loc.startsWith('/admin'))) {
+        if (role == 'hotel' &&
+            (loc.startsWith('/home') || loc.startsWith('/admin'))) {
           return '/hotel';
         }
-        if (role == 'admin' && (loc.startsWith('/home') || loc.startsWith('/hotel'))) {
+        if (role == 'admin' &&
+            (loc.startsWith('/home') || loc.startsWith('/hotel'))) {
           return '/admin';
         }
-        if (role == 'public' && (loc.startsWith('/hotel') || loc.startsWith('/admin'))) {
+        if (role == 'public' &&
+            (loc.startsWith('/hotel') || loc.startsWith('/admin'))) {
           return '/home';
         }
       }
@@ -72,8 +79,6 @@ GoRouter buildRouter(AuthProvider auth) {
       ),
 
       // ── Público ──────────────────────────────────────────────────
-      // /home es la raíz del rol público. Las sub-rutas se anidan
-      // dentro para que GoRouter gestione el back stack correctamente.
       GoRoute(
         path: '/home',
         builder: (_, __) => const HomeScreen(),
@@ -93,8 +98,29 @@ GoRouter buildRouter(AuthProvider auth) {
             ],
           ),
           GoRoute(
+            path: 'room/:id',
+            builder: (_, state) => RoomDetailScreen(
+              room: state.extra as RoomModel,
+            ),
+            routes: [
+              GoRoute(
+                path: 'reserve',
+                builder: (_, state) => CreateReservationScreen(
+                  room: state.extra as RoomModel,
+                ),
+              ),
+            ],
+          ),
+          GoRoute(
             path: 'my-reservations',
             builder: (_, __) => const MyReservationsScreen(),
+          ),
+          // ── NUEVA: pantalla de pago para el turista ─────────────
+          GoRoute(
+            path: 'payment',
+            builder: (_, state) => PaymentScreen(
+              reservation: state.extra as ReservationModel,
+            ),
           ),
         ],
       ),
@@ -115,6 +141,20 @@ GoRouter buildRouter(AuthProvider auth) {
             ),
           ),
           GoRoute(
+            path: 'rooms',
+            builder: (_, __) => const RoomsScreen(),
+          ),
+          GoRoute(
+            path: 'rooms/create',
+            builder: (_, __) => const CreateRoomScreen(),
+          ),
+          GoRoute(
+            path: 'rooms/edit',
+            builder: (_, state) => CreateRoomScreen(
+              roomToEdit: state.extra as RoomModel,
+            ),
+          ),
+          GoRoute(
             path: 'reservations',
             builder: (_, __) => const ReservationRequestsScreen(),
           ),
@@ -129,6 +169,17 @@ GoRouter buildRouter(AuthProvider auth) {
           GoRoute(
             path: 'profile',
             builder: (_, __) => const HotelProfileScreen(),
+          ),
+          // ── NUEVAS rutas del hotel ──────────────────────────────
+          GoRoute(
+            path: 'qr',
+            builder: (_, __) => const HotelQrScreen(),
+          ),
+          GoRoute(
+            path: 'receipt',
+            builder: (_, state) => HotelReceiptScreen(
+              reservation: state.extra as ReservationModel,
+            ),
           ),
         ],
       ),
